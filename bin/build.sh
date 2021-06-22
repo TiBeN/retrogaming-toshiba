@@ -22,9 +22,10 @@ docker build -t retrogaming-iso-builder $script_path/../ --file builder.Dockerfi
 # Generate partitionned ISO image containing filesystem data
 
 docker run --rm -v $script_path/../:/app \
-  --user 1000:1000 \
   retrogaming-iso-builder:latest \
   /app/bin/gen-iso.sh
+
+# --user 1000:1000 \
 
 # Inject bootloader into ISO image
 # Done in separate instance because this process
@@ -39,6 +40,8 @@ docker run --rm -v $script_path/../:/app \
 # Generate Virtualbox image from Raw iso image
 
 docker run --rm -v $script_path/../:/app \
-  --user 1000:1000 \
   retrogaming-iso-builder:latest \
   vboxmanage convertfromraw --format vdi /app/build/retrogaming.iso /app/build/retrogaming.vdi
+
+
+  #--user 1000:1000 \
