@@ -1,8 +1,7 @@
 # ISO Image builder
 
-FROM debian:stretch
+FROM archlinux:base-20210613.0.25781
 
-RUN echo "deb http://deb.debian.org/debian stretch-backports main contrib" > /etc/apt/sources.list.d/backports.list \
-  && apt-get update -y \
-  && apt-get -y install extlinux \
-  && apt-get -y install virtualbox/stretch-backports
+RUN pacman-key --init \
+  && pacman --noconfirm -Suy \
+  && pacman --noconfirm -S arch-install-scripts virtualbox grub

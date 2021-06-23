@@ -1,47 +1,39 @@
 #!/bin/bash
 #
-# Build system iso image
+# Build system ISO image
 
 set -e
 
 script_path=$(readlink -f `dirname $0`)
 
-# Generate file system as Docker image
+# Build Assets inside a Docker image
 
-docker build -t retrogaming-filesystem $script_path/../ --file os-arch.Dockerfile
-
-# Extract Docker image filesystem
-
-container_id=$(docker run -d retrogaming-filesystem /bin/true)
-docker export -o $script_path/../var/tmp/filesystem.tar $container_id
-docker container rm $container_id 
+# To be implemented #
 
 # Generate builder image
+
 docker build -t retrogaming-iso-builder $script_path/../ --file builder.Dockerfile
 
-# Generate partitionned ISO image containing filesystem data
+# Generate and configure base Arch Linux system ISO 
+#
+# Note: Mounting /dev and use --priviledged is 
+# required for mounting the iso but is it not a safe approach.
+# Another solution should be found for that
 
 docker run --rm -v $script_path/../:/app \
+  -v /dev:/dev \
+  --privileged \
   retrogaming-iso-builder:latest \
   /app/bin/gen-iso.sh
 
-# --user 1000:1000 \
+# Inject assets into ISO
 
-# Inject bootloader into ISO image
-# Done in separate instance because this process
-# needs special rights to mount image as loop device
+# To be implemented #
 
+# Generate Virtualbox image from Raw ISO image
+
+rm -rf build/retrogaming.vdi
 docker run --rm -v $script_path/../:/app \
-  --cap-add SYS_ADMIN \
-  --device-cgroup-rule="b 7:* rmw" \
-  retrogaming-iso-builder:latest \
-  /app/bin/inject-bootloader.sh
-
-# Generate Virtualbox image from Raw iso image
-
-docker run --rm -v $script_path/../:/app \
+  --user 1000:1000 \
   retrogaming-iso-builder:latest \
   vboxmanage convertfromraw --format vdi /app/build/retrogaming.iso /app/build/retrogaming.vdi
-
-
-  #--user 1000:1000 \

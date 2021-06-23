@@ -1,26 +1,14 @@
 #!/bin/bash
 #
-# Generate iso partitionned image for Docker exported tar file-system
+# Generate iso image with Base Arch Linux system inside
 
 set -e
 
 script_path=$(readlink -f `dirname $0`)
 
-# Extract filesystem for tar archive
+# Prepare ISO image partition
 
-echo Extract tar file
-
-tar_file=$script_path/../var/tmp/filesystem.tar
-filesystem_path=$script_path/../var/tmp/filesystem
-
-rm -rf $filesystem_path 
-mkdir $filesystem_path
-
-tar -xf $tar_file -C $filesystem_path
-
-# Prepare iso image partition
-
-build_path=$script_path/../build
+build_path=$script_path/../build/
 img_name=retrogaming.iso
 img_file=$build_path/$img_name
 mbyte=1048576
@@ -31,7 +19,7 @@ part_table_offset=$((2**20))
 cur_offset=0
 bs=1024
 
-rm -rf $build_path && mkdir $build_path
+rm -rf $build_path/*
 
 echo Init image file, filling it with zeros
 
@@ -50,10 +38,9 @@ EOF
 
 echo Generate partition with filesystem data
 
-part_file=$script_path/../build/${img_name}1
+part_file=$build_path/${img_name}1
 
 mke2fs -t ext4 \
-  -d "$filesystem_path" \
   -r 1 \
   -N 0 \
   -m 5 \
@@ -62,8 +49,6 @@ mke2fs -t ext4 \
   "$part_file" \
   "${part_size_mbytes}M"
 
-rm -r $filesystem_path 
-
 echo Inject partition data to image
 
 cur_offset=$(($cur_offset + $part_table_offset))
@@ -71,6 +56,45 @@ dd if="$part_file" of="$img_file" bs="$bs" seek="$(($cur_offset/$bs))"
 
 rm -f $part_file
 
-echo Inject Syslinux Master Boot Record
+chown 1000:1000 $img_file
 
-dd if=/usr/lib/syslinux/mbr/mbr.bin of="$img_file" bs=440 count=1 conv=notrunc
+echo Mount image 
+
+losetup -fP $img_file
+lsblk
+mount /dev/loop0p1 /mnt
+
+echo Prepare ArchLinux filesystem
+
+pacstrap /mnt base linux grub
+arch-chroot /mnt ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
+arch-chroot /mnt hwclock --systohc
+arch-chroot /mnt echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
+arch-chroot /mnt locale-gen
+arch-chroot /mnt echo "LANG=en_US.UTF-8" > /etc/locale.conf
+arch-chroot /mnt echo "KEYMAP=fr-latin1" > /etc/vconsole.conf
+arch-chroot /mnt echo "arcade" > /etc/hostname
+arch-chroot /mnt cat << EOF > /etc/hosts
+127.0.0.1 localhost
+::1   localhost
+127.0.1.1 arcade.localdomain  arcade
+EOF
+echo "root:root" | chpasswd -R /mnt
+arch-chroot /mnt useradd -m arcade
+echo "arcade:arcade" | chpasswd -R /mnt
+
+mkdir /mnt/boot/grub 
+
+cat > /mnt/boot/grub/loop0device.map <<EOF
+(hd0) /dev/loop0
+EOF
+
+grub-install --no-floppy --grub-mkdevicemap=loop0device.map \
+  --modules="part_msdos" --boot-directory=/mnt/boot /dev/loop0
+
+arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+
+echo Unmount image
+
+umount /mnt
+losetup -d /dev/loop0
