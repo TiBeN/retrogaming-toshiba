@@ -26,10 +26,6 @@ docker run --rm -v $script_path/../:/app \
   retrogaming-iso-builder:latest \
   /app/bin/gen-iso.sh
 
-# Inject assets into ISO
-
-# To be implemented #
-
 # Generate Virtualbox image from Raw ISO image
 
 rm -rf build/retrogaming.vdi
