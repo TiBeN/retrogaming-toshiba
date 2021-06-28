@@ -19,9 +19,9 @@ RUN SHALLOW_CLONE=1 ./libretro-fetch.sh retroarch $LIBRETRO_CORES
 RUN ./retroarch-build.sh
 RUN ./libretro-build.sh $LIBRETRO_CORES
 
-RUN mkdir -p /build/ra/cores
-RUN cd retroarch && make DESTDIR=/build/ra install
-RUN ./libretro-install.sh /build/ra/cores
+RUN mkdir -p /build/usr/local/lib/libretro
+RUN cd retroarch && make DESTDIR=/build install
+RUN ./libretro-install.sh /build/usr/local/lib/libretro
 
 # Build GroovyMame (for some fun..)
 

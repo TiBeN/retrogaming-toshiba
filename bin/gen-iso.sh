@@ -129,10 +129,22 @@ DHCP=yes
 EOF
 
 # Inject built items (RA etc.)
-cp -r /build /mnt/app
+rm -rf /build/usr/local/share/man
+cp -r /build/* /mnt/
 
 # Inject additional files
 cp -r /app/share/inject/* /mnt/
+
+# (DEBUG) create some launchers for testing purposes
+mkdir -p /mnt/usr/local/bin
+echo 'exec retroarch -L /usr/local/lib/libretro/snes9x_libretro.so "/usr/local/share/roms/Mr. Nutz (USA) (En,Fr).zip"' > /mnt/usr/local/bin/ra-mrnutz
+chmod +x /mnt/usr/local/bin/ra-mrnutz
+echo 'exec retroarch -L /usr/local/lib/libretro/genesis_plus_gx_libretro.so "/usr/local/share/roms/Sonic The Hedgehog 2 (World).zip"' > /mnt/usr/local/bin/ra-sonic2
+chmod +x /mnt/usr/local/bin/ra-sonic2
+echo 'exec retroarch -L /usr/local/lib/libretro/mednafen_pce_libretro.so "/usr/local/share/roms/Magical Chase (USA).zip"' > /mnt/usr/local/bin/ra-magchase
+chmod +x /mnt/usr/local/bin/ra-magchase
+echo 'exec retroarch -L /usr/local/lib/libretro/nestopia_libretro.so "/usr/local/share/roms/Super Mario Bros. (World).zip"' > /mnt/usr/local/bin/ra-smb
+chmod +x /mnt/usr/local/bin/ra-smb
 
 echo Unmount image
 
