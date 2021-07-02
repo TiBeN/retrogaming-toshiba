@@ -68,7 +68,7 @@ echo Prepare ArchLinux filesystem
 pacstrap /mnt base linux intel-ucode grub 
 
 # Additional things for debug
-pacstrap /mnt virtualbox-guest-utils openssh vim
+pacstrap /mnt virtualbox-guest-utils openssh vim wpa_supplicant
 
 arch-chroot /mnt ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
 arch-chroot /mnt hwclock --systohc
@@ -118,6 +118,7 @@ chmod u+s /mnt/usr/lib/Xorg.wrap
 # Enable network
 arch-chroot /mnt systemctl enable systemd-networkd.service
 arch-chroot /mnt systemctl enable systemd-resolved.service
+arch-chroot /mnt systemctl enable wpa_supplicant@wlp20s0.service
 arch-chroot /mnt systemctl enable sshd.service
 
 cat > /mnt/etc/systemd/network/20-wired.network <<EOF
@@ -126,6 +127,22 @@ Name=enp0s3
 
 [Network]
 DHCP=yes
+EOF
+
+cat > /mnt/etc/systemd/network/20-wifi.network <<EOF
+[Match]
+Name=wlp20s0
+
+[Network]
+DHCP=yes
+EOF
+
+cat > /mnt/etc/wpa_supplicant/wpa_supplicant-wlp20s0.conf <<EOF
+network={
+  ssid="SFR_4568"
+  psk="drotogratchestra9wfi"
+  priority=5
+}
 EOF
 
 # Inject built items (RA etc.)
