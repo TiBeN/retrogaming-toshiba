@@ -12,7 +12,7 @@ build_path=$script_path/../build/
 img_name=retrogaming.iso
 img_file=$build_path/$img_name
 mbyte=1048576
-part_size_mbytes=2500
+part_size_mbytes=3000
 part_size=$(($part_size_mbytes * $mbyte))
 block_size=512
 part_table_offset=$((2**20))
@@ -91,7 +91,8 @@ echo "arcade:arcade" | chpasswd -R /mnt
 # bug: <https://bbs.archlinux.org/viewtopic.php?id=250846>
 arch-chroot /mnt pacman --noconfirm -S xorg-server xorg-xinit xterm \
   openbox ttf-dejavu ttf-liberation mesa mesa-demos qt5-base \
-  sdl2 alsa-lib flac zlib ffmpeg v4l-utils libx11
+  sdl2 alsa-lib flac zlib ffmpeg v4l-utils libx11 openal \
+  freetype2 sfml libarchive curl openal glu
 
 mkdir /mnt/boot/grub 
 cat > /mnt/boot/grub/loop0device.map <<EOF
@@ -148,6 +149,12 @@ EOF
 # Inject built items (RA etc.)
 rm -rf /build/usr/local/share/man
 cp -r /build/* /mnt/
+
+# Inject config files
+mkdir -p /mnt/home/arcade/.config
+cp -r /app/etc/retroarch /mnt/home/arcade/.config/
+arch-chroot /mnt chown -R arcade:arcade /home/arcade/.config
+cp /app/etc/switchres.ini /mnt/etc/
 
 # Inject additional files
 cp -r /app/share/inject/* /mnt/
