@@ -12,7 +12,7 @@ build_path=$script_path/../build/
 img_name=retrogaming.iso
 img_file=$build_path/$img_name
 mbyte=1048576
-part_size_mbytes=3000
+part_size_mbytes=5000
 part_size=$(($part_size_mbytes * $mbyte))
 block_size=512
 part_table_offset=$((2**20))
@@ -92,7 +92,7 @@ echo "arcade:arcade" | chpasswd -R /mnt
 arch-chroot /mnt pacman --noconfirm -S xorg-server xorg-xinit xterm \
   openbox ttf-dejavu ttf-liberation mesa mesa-demos qt5-base \
   sdl2 alsa-lib flac zlib ffmpeg v4l-utils libx11 openal \
-  freetype2 sfml libarchive curl openal glu
+  freetype2 sfml libarchive curl openal glu alsa-utils
 
 mkdir /mnt/boot/grub 
 cat > /mnt/boot/grub/loop0device.map <<EOF
@@ -110,11 +110,15 @@ arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
 # Prepare Xorg
 arch-chroot /mnt usermod -aG tty arcade
+arch-chroot /mnt usermod -aG input arcade
 cat > /mnt/etc/X11/Xwrapper.config <<EOF
 allowed_users=anybody
 needs_root_rights=yes
 EOF
 chmod u+s /mnt/usr/lib/Xorg.wrap
+
+# Configure sound 
+arch-chroot /mnt usermod -aG audio arcade
 
 # Enable network
 arch-chroot /mnt systemctl enable systemd-networkd.service
@@ -146,15 +150,36 @@ network={
 }
 EOF
 
+# Autologin and autostart Openbox -> Attract-mode
+# Type=simple
+mkdir -p /mnt/etc/systemd/system/getty@tty1.service.d/
+cat > /mnt/etc/systemd/system/getty@tty1.service.d/override.conf <<EOF
+[Service]
+ExecStart=
+ExecStart=-/usr/bin/agetty --autologin arcade --noclear %I \$TERM
+EOF
+
+cat >> /mnt/home/arcade/.bash_profile <<EOF
+
+if [ -z "\${DISPLAY}" ] && [ "\${XDG_VTNR}" -eq 1 ]; then
+  exec xinit
+fi
+EOF
+
+mkdir -p /mnt/home/arcade/.config
+cp /app/etc/xinitrc /mnt/home/arcade/.xinitrc
+cp -r /app/etc/openbox /mnt/home/arcade/.config/
+
 # Inject built items (RA etc.)
 rm -rf /build/usr/local/share/man
 cp -r /build/* /mnt/
 
 # Inject config files
-mkdir -p /mnt/home/arcade/.config
 cp -r /app/etc/retroarch /mnt/home/arcade/.config/
-arch-chroot /mnt chown -R arcade:arcade /home/arcade/.config
 cp /app/etc/switchres.ini /mnt/etc/
+cp -r /app/etc/attract /mnt/home/arcade/.attract
+
+arch-chroot /mnt chown -R arcade:arcade /home/arcade
 
 # Inject additional files
 cp -r /app/share/inject/* /mnt/
